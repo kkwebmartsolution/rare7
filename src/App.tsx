@@ -17,9 +17,11 @@ import Application from "./pages/students/Application";
 import Character from "./pages/students/Character";
 import Visa from "./pages/students/Visa";
 import AdmissionLetters from "./pages/students/AdmissionLetters";
+import AddStudent from "./pages/students/AddStudent";
 
 // Agent Management
 import AgentManagement from "./pages/agents/AgentManagement";
+import AgentProfile from "./pages/agents/AgentProfile";
 
 // University Section
 import Universities from "./pages/universities/Universities";
@@ -63,6 +65,8 @@ import Login from "./pages/auth/Login";
 
 // Staff Management
 import StaffManagement from "./pages/staff/StaffManagement";
+// Accounts > Staff Accounts (non-agents)
+import StaffAccounts from "./pages/accounts/StaffAccounts";
 
 // Lead Management
 import LeadEnquiry from "./pages/lead/LeadEnquiry";
@@ -93,7 +97,11 @@ const App = () => (
             
             {/* Student Module */}
             <Route path="/students/direct" element={<ProtectedRoute><DirectStudents /></ProtectedRoute>} />
+            <Route path="/students/add" element={<ProtectedRoute><AddStudent /></ProtectedRoute>} />
             <Route path="/students/agent" element={<ProtectedRoute><AgentStudents /></ProtectedRoute>} />
+            
+            {/* Profile */}
+            <Route path="/profile" element={<ProtectedRoute><AgentProfile /></ProtectedRoute>} />
             <Route path="/students/admission" element={<ProtectedRoute><StudentAdmission /></ProtectedRoute>} />
             <Route path="/students/application" element={<ProtectedRoute><Application /></ProtectedRoute>} />
             <Route path="/students/admission-letters" element={<ProtectedRoute><AdmissionLetters /></ProtectedRoute>} />
@@ -103,6 +111,8 @@ const App = () => (
 
             {/* Accounts > Students (reuses All Applicants list) */}
             <Route path="/accounts/students" element={<ProtectedRoute allowedRoles={['admin','finance']}><DirectStudents /></ProtectedRoute>} />
+            {/* Accounts > Staff (exclude agents) */}
+            <Route path="/accounts/staff" element={<ProtectedRoute allowedRoles={['admin','finance']}><StaffAccounts /></ProtectedRoute>} />
             
             {/* Agent Management */}
             <Route path="/agents" element={<ProtectedRoute><AgentManagement /></ProtectedRoute>} />

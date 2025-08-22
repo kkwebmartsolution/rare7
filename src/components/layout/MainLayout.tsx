@@ -72,12 +72,12 @@ const allNavItems: NavItem[] = [
     href: "/students", 
     icon: GraduationCap,
     subItems: [
-      { title: "All Applicants", href: "/students/direct", allowedRoles: ['admin', 'finance'] },
+      { title: "All Students", href: "/students/direct", allowedRoles: ['admin', 'finance'] },
+      { title: "Add Students", href: "/students/add", allowedRoles: ['admin', 'finance'] },
       { title: "Agent Students", href: "/students/agent" },
       { title: "Pending Application", href: "/students/application" },
       { title: "Admission Letter Upload", href: "/students/admission-letters" },
       { title: "Character", href: "/students/character" },
-      
     ]
   },
   { title: "Invoice", href: "/students/invoice", icon: Receipt },
@@ -108,18 +108,25 @@ const allNavItems: NavItem[] = [
     title: "Accounts", 
     href: "/accounts", 
     icon: CreditCard,
+    allowedRoles: ['admin', 'finance'],
     subItems: [
       { title: "Students", href: "/accounts/students" },
       { title: "Staff Accounts", href: "/accounts/staff" },
-      { title: "Agent Account", href: "/accounts/agents" },
+      { title: "Agent Accounts", href: "/accounts/agents" },
     ]
   },
   { 
     title: "Document Management", 
     href: "/documents", 
     icon: BookOpen,
+    allowedRoles: ['admin', 'finance', 'hostel_team']
   },
-  { title: "Visa", href: "/students/visa", icon: MapPin },
+  { 
+    title: "Visa", 
+    href: "/students/visa", 
+    icon: MapPin,
+    allowedRoles: ['admin', 'finance']
+  },
   { 
     title: "Fees Collection", 
     href: "/fees", 
@@ -133,11 +140,7 @@ const allNavItems: NavItem[] = [
       { title: "Payment History", href: "/fees/payment-history", allowedRoles: ['admin', 'finance'] },
     ]
   },
-  { 
-    title: "Profile", 
-    href: "/agents", 
-    icon: Users
-  },
+  
   { 
     title: "Universities", 
     href: "/universities", 
@@ -149,12 +152,17 @@ const allNavItems: NavItem[] = [
   { title: "Personal Expenses", href: "/personal-expenses", icon: Calculator, allowedRoles: ['admin', 'finance'] },
   { title: "Reports", href: "/reports", icon: BarChart3, allowedRoles: ['admin', 'finance'] },
   { 
+    title: "Profile", 
+    href: "/profile", 
+    icon: User,
+    allowedRoles: ['agent'] // Only show for agents
+  },
+  { 
     title: "Settings", 
     href: "/settings", 
     icon: Settings,
     allowedRoles: ['admin', 'finance', 'hostel_team']
   },
-  { title: "Staff", href: "/staff", icon: UserPlus, allowedRoles: ['admin'] },
 ];
 
 interface MainLayoutProps {
@@ -168,7 +176,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
     return saved !== null ? JSON.parse(saved) : true;
   });
   
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('expandedItems');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const location = useLocation();
   
   const { user, logout, isOfficeUser, isOffice, getUserOfficeLocation } = useAuth();
@@ -187,15 +202,26 @@ export default function MainLayout({ children }: MainLayoutProps) {
       return item.title === 'Dashboard' || item.title === 'Hostel & Mess';
     }
     
-    // For other roles, check allowedRoles or show to all if no restriction
-    if (!item.allowedRoles) return true;
-    return user.role === 'admin' || item.allowedRoles.includes(user.role);
+    // For other roles, check allowedRoles
+    // If item has allowedRoles, user's role must be in the list
+    // If no allowedRoles, show to all except where explicitly hidden
+    if (item.allowedRoles) {
+      return item.allowedRoles.includes(user.role);
+    }
+    return true;
   });
   
   // Save sidebar state to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('sidebarOpen', JSON.stringify(sidebarOpen));
   }, [sidebarOpen]);
+  
+  // Persist expanded submenu state to avoid auto-collapse on navigation/remount
+  useEffect(() => {
+    try {
+      localStorage.setItem('expandedItems', JSON.stringify(expandedItems));
+    } catch {}
+  }, [expandedItems]);
   
   const toggleExpand = (title: string) => {
     setExpandedItems(prev => 
@@ -253,7 +279,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       onClick={() => toggleExpand(item.title)}
                       className={cn(
                         "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        expandedItems.includes(item.title) || location.pathname.startsWith(item.href)
+                        expandedItems.includes(item.title)
+                          || location.pathname.startsWith(item.href)
+                          || (item.subItems && item.subItems.some(sub => location.pathname.startsWith(sub.href)))
                           ? "bg-sidebar-primary text-sidebar-primary-foreground"
                           : "text-sidebar-foreground",
                         !sidebarOpen && "justify-center px-1"
@@ -277,7 +305,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         </>
                       )}
                     </button>
-                    {(sidebarOpen && (expandedItems.includes(item.title) || location.pathname.startsWith(item.href))) && (
+                    {(sidebarOpen && expandedItems.includes(item.title)) && (
                       <ul className="ml-6 mt-1 space-y-1">
                         {item.subItems
                           .filter(subItem => {
@@ -297,7 +325,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                               )}
                              >
                                {subItem.href === "/students/agent" && user?.role === 'agent' 
-                                 ? "All Applicants" 
+                                 ? "All Students" 
                                  : subItem.title}
                              </Link>
                           </li>
